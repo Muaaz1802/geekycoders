@@ -1,0 +1,5 @@
+{
+  "name": "AI Resume Screener & Enhancer",
+  "description": "An intelligent tool that ranks resumes against job descriptions and provides detailed visual highlights for quick screening.",
+  "requestFramePermissions": []
+}

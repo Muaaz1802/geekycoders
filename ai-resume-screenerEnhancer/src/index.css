@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* PDF.js Text Layer Styles */
+.textLayer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  opacity: 1;
+  line-height: 1;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.textLayer span,
+.textLayer br {
+  color: transparent !important;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  pointer-events: auto;
+}
+
+/* Custom Highlight Styles for PDF Layer */
+.textLayer .bg-emerald-400\/40 {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-bottom: 2px solid rgba(16, 185, 129, 0.4);
+  mix-blend-mode: multiply;
+  transition: all 0.2s ease;
+}
+
+.textLayer .bg-emerald-400\/40:hover {
+  background-color: rgba(16, 185, 129, 0.2);
+  border-bottom-color: rgba(16, 185, 129, 0.8);
+}
+
+.textLayer .bg-rose-400\/40 {
+  background-color: rgba(244, 63, 94, 0.12);
+  border-bottom: 2px solid rgba(244, 63, 94, 0.4);
+  mix-blend-mode: multiply;
+  transition: all 0.2s ease;
+}
+
+.textLayer .bg-rose-400\/40:hover {
+  background-color: rgba(244, 63, 94, 0.2);
+  border-bottom-color: rgba(244, 63, 94, 0.8);
+}
+
+.textLayer .bg-amber-400\/40 {
+  background-color: rgba(245, 158, 11, 0.12);
+  border-bottom: 2px solid rgba(245, 158, 11, 0.4);
+  mix-blend-mode: multiply;
+  transition: all 0.2s ease;
+}
+
+.textLayer .bg-amber-400\/40:hover {
+  background-color: rgba(245, 158, 11, 0.2);
+  border-bottom-color: rgba(245, 158, 11, 0.8);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
