@@ -1,6 +1,6 @@
 -- ============================================================
 -- Geekycoders Resume Builder - Supabase SQL Schema
--- Run this entire file in Supabase Dashboard → SQL Editor → New query
+-- Run thissiasldfjadshfkjd entire file in Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 
 -- Enable UUID extension (Supabase usually has it; uncomment if needed)
