@@ -1,27 +1,34 @@
 /**
- * Template controller: list templates (no auth required for listing).
+ * List resume templates from Supabase (read-only).
  */
-const Template = require('../models/Template');
+const { supabase } = require('../config/supabase');
 
-exports.list = async (req, res, next) => {
+async function list(req, res, next) {
   try {
-    const { layout, category } = req.query;
-    const filter = { isActive: true };
-    if (layout) filter.layout = layout;
-    if (category) filter.category = category;
-    const templates = await Template.find(filter).sort({ name: 1 });
-    res.json({ success: true, templates });
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    if (error) throw error;
+    res.json(data || []);
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.getOne = async (req, res, next) => {
+async function getOne(req, res, next) {
   try {
-    const template = await Template.findOne({ _id: req.params.id, isActive: true });
-    if (!template) return res.status(404).json({ message: 'Template not found.' });
-    res.json({ success: true, template });
+    const { id } = req.params;
+    const { data, error } = await supabase.from('templates').select('*').eq('id', id).single();
+    if (error) {
+      if (error.code === 'PGRST116') return res.status(404).json({ message: 'Template not found' });
+      throw error;
+    }
+    res.json(data);
   } catch (err) {
     next(err);
   }
-};
+}
+
+module.exports = { list, getOne };

@@ -1,13 +1,13 @@
 /**
- * Cover letter CRUD via Supabase.
+ * Job application tracker CRUD via Supabase.
  */
 const { supabase } = require('../config/supabase');
 
 async function list(req, res, next) {
   try {
     const { data, error } = await supabase
-      .from('cover_letters')
-      .select('id, title, company_name, job_title, updated_at')
+      .from('job_applications')
+      .select('*')
       .eq('user_id', req.user.id)
       .order('updated_at', { ascending: false });
     if (error) throw error;
@@ -21,13 +21,13 @@ async function getOne(req, res, next) {
   try {
     const { id } = req.params;
     const { data, error } = await supabase
-      .from('cover_letters')
+      .from('job_applications')
       .select('*')
       .eq('id', id)
       .eq('user_id', req.user.id)
       .single();
     if (error) {
-      if (error.code === 'PGRST116') return res.status(404).json({ message: 'Cover letter not found' });
+      if (error.code === 'PGRST116') return res.status(404).json({ message: 'Application not found' });
       throw error;
     }
     res.json(data);
@@ -38,17 +38,19 @@ async function getOne(req, res, next) {
 
 async function create(req, res, next) {
   try {
-    const { resume_id, title, job_title, company_name, job_description, content } = req.body;
+    const { resume_id, company_name, job_title, job_url, job_description, status, match_score, notes } = req.body;
     const { data, error } = await supabase
-      .from('cover_letters')
+      .from('job_applications')
       .insert({
         user_id: req.user.id,
         resume_id: resume_id || null,
-        title: title || 'Cover Letter',
-        job_title: job_title || null,
-        company_name: company_name || null,
+        company_name: company_name || '',
+        job_title: job_title || '',
+        job_url: job_url || null,
         job_description: job_description || null,
-        content: content || {},
+        status: status || 'saved',
+        match_score: match_score ?? null,
+        notes: notes || null,
       })
       .select()
       .single();
@@ -63,19 +65,19 @@ async function update(req, res, next) {
   try {
     const { id } = req.params;
     const body = req.body;
-    const allowed = ['title', 'job_title', 'company_name', 'job_description', 'content', 'resume_id'];
+    const allowed = ['resume_id', 'company_name', 'job_title', 'job_url', 'job_description', 'status', 'applied_at', 'match_score', 'notes'];
     const payload = {};
     allowed.forEach((k) => { if (body[k] !== undefined) payload[k] = body[k]; });
 
     const { data, error } = await supabase
-      .from('cover_letters')
+      .from('job_applications')
       .update(payload)
       .eq('id', id)
       .eq('user_id', req.user.id)
       .select()
       .single();
     if (error) throw error;
-    if (!data) return res.status(404).json({ message: 'Cover letter not found' });
+    if (!data) return res.status(404).json({ message: 'Application not found' });
     res.json(data);
   } catch (err) {
     next(err);
@@ -85,7 +87,7 @@ async function update(req, res, next) {
 async function remove(req, res, next) {
   try {
     const { id } = req.params;
-    const { error } = await supabase.from('cover_letters').delete().eq('id', id).eq('user_id', req.user.id);
+    const { error } = await supabase.from('job_applications').delete().eq('id', id).eq('user_id', req.user.id);
     if (error) throw error;
     res.status(204).send();
   } catch (err) {

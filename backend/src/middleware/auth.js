@@ -1,8 +1,12 @@
 /**
- * JWT authentication middleware. Attaches req.user when token is valid.
+ * Auth middleware: validates Supabase JWT from Authorization header.
+ * Expects: Authorization: Bearer <supabase_access_token>
+ * Attaches req.user (id, email, etc.) when valid.
  */
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 const auth = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -11,9 +15,11 @@ const auth = async (req, res, next) => {
   }
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(401).json({ message: 'User not found.' });
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ message: 'Invalid or expired token.' });
+    }
     req.user = user;
     next();
   } catch (err) {

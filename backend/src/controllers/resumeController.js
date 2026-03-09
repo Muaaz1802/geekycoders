@@ -1,68 +1,118 @@
 /**
- * Resume controller: CRUD, duplicate, export placeholder.
+ * Resume CRUD and PDF upload. PDFs stored in Supabase Storage bucket.
  */
-const Resume = require('../models/Resume');
+const { supabase } = require('../config/supabase');
+const { STORAGE_BUCKET_RESUMES } = require('../config/constants');
 
-exports.list = async (req, res, next) => {
+async function list(req, res, next) {
   try {
-    const resumes = await Resume.find({ userId: req.user._id }).sort({ updatedAt: -1 });
-    res.json({ success: true, resumes });
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('id, title, template_id, updated_at, pdf_storage_path')
+      .eq('user_id', req.user.id)
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.getOne = async (req, res, next) => {
+async function getOne(req, res, next) {
   try {
-    const resume = await Resume.findOne({ _id: req.params.id, userId: req.user._id }).populate('templateId');
-    if (!resume) return res.status(404).json({ message: 'Resume not found.' });
-    res.json({ success: true, resume });
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .single();
+    if (error) {
+      if (error.code === 'PGRST116') return res.status(404).json({ message: 'Resume not found' });
+      throw error;
+    }
+    res.json(data);
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.create = async (req, res, next) => {
+async function create(req, res, next) {
   try {
-    const resume = await Resume.create({ userId: req.user._id, ...req.body });
-    res.status(201).json({ success: true, resume });
+    const { title, template_id, sections, contact, settings } = req.body;
+    const { data, error } = await supabase
+      .from('resumes')
+      .insert({
+        user_id: req.user.id,
+        title: title || 'My Resume',
+        template_id: template_id || null,
+        sections: sections || [],
+        contact: contact || {},
+        settings: settings || {},
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    res.status(201).json(data);
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.update = async (req, res, next) => {
+async function update(req, res, next) {
   try {
-    const resume = await Resume.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      req.body,
-      { new: true }
-    );
-    if (!resume) return res.status(404).json({ message: 'Resume not found.' });
-    res.json({ success: true, resume });
+    const { id } = req.params;
+    const { title, template_id, sections, contact, settings, is_public } = req.body;
+    const payload = {};
+    if (title !== undefined) payload.title = title;
+    if (template_id !== undefined) payload.template_id = template_id;
+    if (sections !== undefined) payload.sections = sections;
+    if (contact !== undefined) payload.contact = contact;
+    if (settings !== undefined) payload.settings = settings;
+    if (is_public !== undefined) payload.is_public = is_public;
+
+    const { data, error } = await supabase
+      .from('resumes')
+      .update(payload)
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ message: 'Resume not found' });
+    res.json(data);
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.remove = async (req, res, next) => {
+async function remove(req, res, next) {
   try {
-    const deleted = await Resume.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-    if (!deleted) return res.status(404).json({ message: 'Resume not found.' });
-    res.json({ success: true, message: 'Resume deleted.' });
+    const { id } = req.params;
+    const { data: resume } = await supabase.from('resumes').select('pdf_storage_path').eq('id', id).eq('user_id', req.user.id).single();
+    const { error: delError } = await supabase.from('resumes').delete().eq('id', id).eq('user_id', req.user.id);
+    if (delError) throw delError;
+    if (resume?.pdf_storage_path) {
+      await supabase.storage.from(STORAGE_BUCKET_RESUMES).remove([resume.pdf_storage_path]);
+    }
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
-};
+}
 
-exports.duplicate = async (req, res, next) => {
+/** Generate a signed URL for viewing/downloading PDF from Storage */
+async function getPdfUrl(req, res, next) {
   try {
-    const original = await Resume.findOne({ _id: req.params.id, userId: req.user._id });
-    if (!original) return res.status(404).json({ message: 'Resume not found.' });
-    const { _id, ...data } = original.toObject();
-    const resume = await Resume.create({ ...data, userId: req.user._id, title: `${original.title} (Copy)` });
-    res.status(201).json({ success: true, resume });
+    const { id } = req.params;
+    const { data: resume } = await supabase.from('resumes').select('pdf_storage_path').eq('id', id).eq('user_id', req.user.id).single();
+    if (!resume?.pdf_storage_path) return res.status(404).json({ message: 'No PDF for this resume' });
+    const { data: urlData, error } = await supabase.storage.from(STORAGE_BUCKET_RESUMES).createSignedUrl(resume.pdf_storage_path, 3600);
+    if (error) throw error;
+    res.json({ url: urlData?.signedUrl });
   } catch (err) {
     next(err);
   }
-};
+}
+
+module.exports = { list, getOne, create, update, remove, getPdfUrl };

@@ -1,5 +1,5 @@
 /**
- * Application constants: section types, template categories, etc.
+ * Application constants: section types, template categories, storage bucket.
  */
 const RESUME_SECTION_TYPES = [
   'summary',
@@ -16,10 +16,10 @@ const RESUME_SECTION_TYPES = [
 
 const TEMPLATE_LAYOUTS = ['single-column', 'double-column', 'multi-column'];
 
-const COVER_LETTER_SECTIONS = ['greeting', 'intro', 'body', 'closing', 'signature'];
+const STORAGE_BUCKET_RESUMES = 'resume-pdfs';
 
 module.exports = {
   RESUME_SECTION_TYPES,
   TEMPLATE_LAYOUTS,
-  COVER_LETTER_SECTIONS,
+  STORAGE_BUCKET_RESUMES,
 };
